@@ -44,7 +44,7 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg,
+		if err = client.Publish(ctx, publishTopic, []byte(msg),
 			options.WithPubPriority(3),
 			options.WithPubAppID("AppId2026001"),
 			options.WithPubMessageID(fmt.Sprintf("%v", i)),

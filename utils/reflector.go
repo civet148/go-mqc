@@ -7,6 +7,10 @@ import (
 )
 
 func MarshalPublishMsg(msg any) (data []byte) {
+	if _, ok := msg.([]byte); ok {
+		data = msg.([]byte)
+		return data
+	}
 	var val = reflect.ValueOf(msg)
 	val = reflect.Indirect(val)
 	switch val.Type().Kind() {
