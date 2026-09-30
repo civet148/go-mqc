@@ -63,7 +63,7 @@ func runConsumer(ctx context.Context, client types.MQ) (err error) {
 	return nil
 }
 
-func messageHandle(topic string, data any, opfs ...options.MessageOption) error {
+func messageHandle(topic string, data []byte, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)
@@ -138,7 +138,7 @@ func runConsumer(ctx context.Context, client types.MQ) (err error) {
 	return nil
 }
 
-func messageHandle(topic string, data any, opfs ...options.MessageOption) error {
+func messageHandle(topic string, data []byte, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)
