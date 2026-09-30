@@ -117,7 +117,11 @@ func (c *rabbitClient) parsePublishOptions(pubOptions options.PublishOptions) (p
 	if pubOptions.Expiration != "" {
 		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsExpiration(pubOptions.Expiration))
 	}
-	if pubOptions.DeliveryMode == types.DeliveryModePersistent {
+	if pubOptions.DeliveryMode == 0 {
+		if c.dialOptions.DeliveryMode == types.DeliveryModePersistent {
+			publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPersistentDelivery)
+		}
+	} else if pubOptions.DeliveryMode == types.DeliveryModePersistent {
 		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPersistentDelivery)
 	}
 	return publishOptions

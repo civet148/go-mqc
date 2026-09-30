@@ -19,7 +19,8 @@ const (
 
 func main() {
 	var ctx = context.Background()
-	client, err := mqc.NewMQ(address, options.WithExchangeName("order"))
+
+	client, err := mqc.NewMQ(address, options.WithExchangeName("order"), options.WithDeliveryMode(types.DeliveryModePersistent))
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -44,9 +45,9 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
 		if err = client.Publish(ctx, publishTopic, msg,
+			options.WithPubPriority(3),
 			options.WithPubAppID("AppId2026001"),
 			options.WithPubMessageID(fmt.Sprintf("%v", i)),
-			options.WithPubDeliveryMode(types.DeliveryModePersistent),
 			options.WithPubContentEncoding(types.ContentEncoding_UTF8),
 			options.WithPubContentType(types.ContentType_ApplicationJSON),
 		); err != nil {

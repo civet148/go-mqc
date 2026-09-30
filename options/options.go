@@ -33,6 +33,7 @@ type DialOptions struct {
 	MaxIncomingPacket   int           // 最大入站数据包大小 (MQTT default: 1MB)
 	ExchangeName        string        // 交换机名称(仅限RabbitMQ)
 	ExchangeKind        ExchangeKind  // 交换机类型(仅限RabbitMQ)
+	DeliveryMode        uint8         // 持久化控制：1=非持久化，2=持久化
 }
 
 type DialOption func(opts *DialOptions)
@@ -48,7 +49,11 @@ func WithExchangeName(exchangeName string) DialOption {
 		opts.ExchangeName = exchangeName
 	}
 }
-
+func WithDeliveryMode(deliveryMode uint8) DialOption {
+	return func(opts *DialOptions) {
+		opts.DeliveryMode = deliveryMode
+	}
+}
 func WithUser(user string) DialOption {
 	return func(opts *DialOptions) {
 		opts.User = user
