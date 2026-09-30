@@ -99,10 +99,12 @@ const (
 
 func main() {
 	var ctx = context.Background()
-	client, err := mqc.NewMQ(address, options.WithExchangeName("order"))
+
+	client, err := mqc.NewMQ(address, options.WithExchangeName("order"), options.WithDeliveryMode(types.DeliveryModePersistent))
 	if err != nil {
 		log.Panic(err.Error())
 	}
+	defer client.Close(ctx)
 
 	// 异步启动消费者
 	go runConsumer(ctx, client)
@@ -119,10 +121,16 @@ func main() {
 
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
 	// 发布10条测试消息
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg); err != nil {
+		if err = client.Publish(ctx, publishTopic, msg,
+			options.WithPubPriority(3),
+			options.WithPubAppID("AppId2026001"),
+			options.WithPubMessageID(fmt.Sprintf("%v", i)),
+			options.WithPubContentEncoding(types.ContentEncoding_UTF8),
+			options.WithPubContentType(types.ContentType_ApplicationJSON),
+		); err != nil {
 			panic(err)
 		}
 		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
@@ -131,21 +139,35 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 }
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle, options.WithQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithSubQueueName("order_queue_1"))
+	if err != nil {
+		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
+	}
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithSubQueueName("order_queue_1"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}
 	return nil
 }
 
-func messageHandle(topic string, data []byte, opfs ...options.MessageOption) error {
+func messageHandle1(topic string, data []byte, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)
 	}
-	log.Infof("Received message on topic [%s] data [%s]", topic, data)
+	log.Infof("[consumer1] Received message on topic [%s] data [%s] msg options [%+v]", topic, data, msgOptions)
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
+func messageHandle2(topic string, data []byte, opfs ...options.MessageOption) error {
+	var msgOptions options.MessageOptions
+	for _, opf := range opfs {
+		opf(&msgOptions)
+	}
+	log.Infof("[consumer2] Received message on topic [%s] data [%s] msg options [%+v]", topic, data, msgOptions)
+	time.Sleep(100 * time.Millisecond)
+	return nil
+}
+
 
 ```
