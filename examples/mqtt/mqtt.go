@@ -23,6 +23,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+	defer client.Close(ctx)
 
 	// 异步启动消费者
 	go runConsumer(ctx, client)

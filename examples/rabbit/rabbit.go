@@ -23,6 +23,7 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
+	defer client.Close(ctx)
 
 	// 异步启动消费者
 	go runConsumer(ctx, client)
@@ -51,19 +52,32 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 }
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle, options.WithQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithQueueName("order_queue_1"))
+	if err != nil {
+		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
+	}
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithQueueName("order_queue_1"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}
 	return nil
 }
 
-func messageHandle(topic string, data any, opfs ...options.MessageOption) error {
+func messageHandle1(topic string, data any, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)
 	}
-	log.Infof("Received message on topic [%s] data [%s]", topic, data)
+	log.Infof("[consumer1] Received message on topic [%s] data [%s]", topic, data)
+	time.Sleep(100 * time.Millisecond)
+	return nil
+}
+func messageHandle2(topic string, data any, opfs ...options.MessageOption) error {
+	var msgOptions options.MessageOptions
+	for _, opf := range opfs {
+		opf(&msgOptions)
+	}
+	log.Infof("[consumer2] Received message on topic [%s] data [%s]", topic, data)
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
