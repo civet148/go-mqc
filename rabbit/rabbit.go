@@ -3,6 +3,7 @@ package rabbit
 import (
 	"context"
 	"fmt"
+
 	"github.com/civet148/go-mqc/options"
 	"github.com/civet148/go-mqc/types"
 	"github.com/civet148/go-mqc/utils"
@@ -50,12 +51,15 @@ func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs 
 	for _, opf := range opfs {
 		opf(&pubOptions)
 	}
+	var publisherOptions = []func(*rabbitmq.PublisherOptions){
+		rabbitmq.WithPublisherOptionsExchangeName(c.exchangeName()),
+		rabbitmq.WithPublisherOptionsExchangeKind(c.exchangeKind()),
+		rabbitmq.WithPublisherOptionsExchangeDeclare,
+	}
 	if c.publisher == nil {
 		publisher, err := rabbitmq.NewPublisher(
 			c.client,
-			rabbitmq.WithPublisherOptionsExchangeName(c.exchangeName()),
-			rabbitmq.WithPublisherOptionsExchangeKind(c.exchangeKind()),
-			rabbitmq.WithPublisherOptionsExchangeDeclare,
+			publisherOptions...,
 		)
 		if err != nil {
 			return log.Errorf("new publisher error: %s", err)
@@ -63,15 +67,60 @@ func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs 
 		c.publisher = publisher
 	}
 	var routingKeys = []string{topic}
+	var publishOptions = []func(*rabbitmq.PublishOptions){
+		rabbitmq.WithPublishOptionsExchange(c.exchangeName()),
+	}
 	if len(pubOptions.RoutingKeys) != 0 {
 		routingKeys = append(routingKeys, pubOptions.RoutingKeys...)
 	}
+	publishOptions = append(publishOptions, c.parsePublishOptions(pubOptions)...)
+
 	data := utils.MarshalPublishMsg(msg)
-	err := c.publisher.Publish(data, routingKeys, rabbitmq.WithPublishOptionsExchange(c.exchangeName()))
+	err := c.publisher.Publish(data, routingKeys, publishOptions...)
 	if err != nil {
 		return log.Errorf("exchange [%s] routing key %v publish message error: %s", c.exchangeName(), routingKeys, err)
 	}
 	return nil
+}
+
+func (c *rabbitClient) parsePublishOptions(pubOptions options.PublishOptions) (publishOptions []func(*rabbitmq.PublishOptions)) {
+	if pubOptions.ContentEncoding != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentEncoding(pubOptions.ContentEncoding))
+	}
+	if pubOptions.ContentType != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentType(pubOptions.ContentType))
+	}
+	if pubOptions.CorrelationID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsCorrelationID(pubOptions.CorrelationID))
+	}
+	if pubOptions.ReplyTo != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsReplyTo(pubOptions.ReplyTo))
+	}
+	if pubOptions.Priority != 0 {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPriority(pubOptions.Priority))
+	}
+	if pubOptions.MessageID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsMessageID(pubOptions.MessageID))
+	}
+	if pubOptions.Type != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsType(pubOptions.Type))
+	}
+	if pubOptions.UserID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsUserID(pubOptions.UserID))
+	}
+	if pubOptions.AppID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsAppID(pubOptions.AppID))
+	}
+	if pubOptions.Timestamp.Unix() != 0 {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsTimestamp(pubOptions.Timestamp))
+	}
+	if pubOptions.Expiration != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsExpiration(pubOptions.Expiration))
+	}
+	if pubOptions.DeliveryMode == types.DeliveryModePersistent {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPersistentDelivery)
+	}
+	return publishOptions
 }
 
 func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler types.MessageHandler, opfs ...options.SubscribeOption) error {
@@ -97,16 +146,17 @@ func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler type
 	go func() {
 		err = consumer.Run(func(d rabbitmq.Delivery) rabbitmq.Action {
 			var msgOptions = []options.MessageOption{
-				options.WithExpiration(d.Expiration),
-				options.WithCorrelationId(d.CorrelationId),
-				options.WithDeliveryMode(d.DeliveryMode),
-				options.WithPriority(d.Priority),
-				options.WithReplyTo(d.ReplyTo),
-				options.WithTimestamp(d.Timestamp),
-				options.WithCorrelationId(d.CorrelationId),
-				options.WithMessageId(d.MessageId),
-				options.WithType(d.Type),
-				options.WithUserId(d.UserId),
+				options.WithMsgExpiration(d.Expiration),
+				options.WithMsgCorrelationID(d.CorrelationId),
+				options.WithMsgDeliveryMode(d.DeliveryMode),
+				options.WithMsgPriority(d.Priority),
+				options.WithMsgReplyTo(d.ReplyTo),
+				options.WithMsgTimestamp(d.Timestamp),
+				options.WithMsgCorrelationID(d.CorrelationId),
+				options.WithMsgMessageId(d.MessageId),
+				options.WithMsgType(d.Type),
+				options.WithMsgUserID(d.UserId),
+				options.WithMsgAppID(d.AppId),
 			}
 			if err = handler(d.RoutingKey, d.Body, msgOptions...); err != nil {
 				if subOptions.NackDiscard {

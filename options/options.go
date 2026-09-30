@@ -130,10 +130,21 @@ func WithMaxIncomingPacket(maxIncomingPacket int) DialOption {
 /*-----------------------------------------------------------------------------------------------------------*/
 
 type PublishOptions struct {
-	Qos         uint8    // QoS 0: 最多一次 1: 最少一次 2: 只一次
-	Retain      bool     // 是否保留消息
-	RoutingKeys []string // 一次发布到多个路由键
-
+	Qos             uint8     // MQTT: QoS 0: 最多一次 1: 最少一次 2: 只一次
+	Retain          bool      // 是否保留消息
+	RoutingKeys     []string  // 一次发布到多个路由键
+	ContentType     string    // MIME类型，如: "application/json"
+	DeliveryMode    uint8     //	持久化控制：1=非持久化，2=持久化
+	Expiration      string    //	消息级TTL，单位毫秒，字符串格式(例如：24小时="86400000")
+	ContentEncoding string    //	字符编码，如: "utf-8"
+	Priority        uint8     //	优先级(0-9)
+	CorrelationID   string    //	RPC关联ID
+	ReplyTo         string    //	RPC回复队列
+	MessageID       string    //	消息唯一标识
+	Timestamp       time.Time //	消息时间戳
+	Type            string    //	应用自定义类型名
+	UserID          string    //	消息创建用户ID
+	AppID           string    //	消息创建应用ID
 }
 
 type PublishOption func(opts *PublishOptions)
@@ -144,15 +155,76 @@ func WithPubQos(qos uint8) PublishOption {
 	}
 }
 
-func WithRetain(retain bool) PublishOption {
+func WithPubRetain(retain bool) PublishOption {
 	return func(opts *PublishOptions) {
 		opts.Retain = retain
 	}
 }
 
-func WithRoutingKeys(routingKeys ...string) PublishOption {
+func WithPubRoutingKeys(routingKeys ...string) PublishOption {
 	return func(opts *PublishOptions) {
 		opts.RoutingKeys = routingKeys
+	}
+}
+
+func WithPubContentType(contentType string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.ContentType = contentType
+	}
+}
+func WithPubDeliveryMode(deliveryMode uint8) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.DeliveryMode = deliveryMode
+	}
+}
+func WithPubExpiration(expiration string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.Expiration = expiration
+	}
+}
+func WithPubContentEncoding(contentEncoding string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.ContentEncoding = contentEncoding
+	}
+}
+func WithPubPriority(priority uint8) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.Priority = priority
+	}
+}
+func WithPubCorrelationID(correlationID string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.CorrelationID = correlationID
+	}
+}
+func WithPubReplyTo(replyTo string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.ReplyTo = replyTo
+	}
+}
+func WithPubMessageID(messageID string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.MessageID = messageID
+	}
+}
+func WithPubTimestamp(timestamp time.Time) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.Timestamp = timestamp
+	}
+}
+func WithPubType(typ string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.Type = typ
+	}
+}
+func WithPubUserID(userID string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.UserID = userID
+	}
+}
+func WithPubAppID(appID string) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.AppID = appID
 	}
 }
 
@@ -167,13 +239,13 @@ type SubscribeOptions struct {
 
 type SubscribeOption func(opts *SubscribeOptions)
 
-func WithBlock(block bool) SubscribeOption {
+func WithSubBlock(block bool) SubscribeOption {
 	return func(opts *SubscribeOptions) {
 		opts.Block = block
 	}
 }
 
-func WithQueueName(queueName string) SubscribeOption {
+func WithSubQueueName(queueName string) SubscribeOption {
 	return func(opts *SubscribeOptions) {
 		opts.QueueName = queueName
 	}
@@ -185,7 +257,7 @@ func WithSubQos(qos uint8) SubscribeOption {
 	}
 }
 
-func WithNackDiscard() SubscribeOption {
+func WithSubNackDiscard() SubscribeOption {
 	return func(opts *SubscribeOptions) {
 		opts.NackDiscard = true
 	}
@@ -207,57 +279,57 @@ type MessageOptions struct {
 }
 type MessageOption func(opts *MessageOptions)
 
-func WithDeliveryMode(deliveryMode uint8) MessageOption {
+func WithMsgDeliveryMode(deliveryMode uint8) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.DeliveryMode = deliveryMode
 	}
 }
-func WithPriority(priority uint8) MessageOption {
+func WithMsgPriority(priority uint8) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.Priority = priority
 	}
 }
-func WithMessageId(messageId string) MessageOption {
+func WithMsgMessageId(messageId string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.MessageId = messageId
 	}
 }
 
-func WithTimestamp(timestamp time.Time) MessageOption {
+func WithMsgTimestamp(timestamp time.Time) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.Timestamp = timestamp
 	}
 }
 
-func WithType(typ string) MessageOption {
+func WithMsgType(typ string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.Type = typ
 	}
 }
 
-func WithUserId(userId string) MessageOption {
+func WithMsgUserID(userId string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.UserId = userId
 	}
 }
-func WithAppId(appId string) MessageOption {
+func WithMsgAppID(appId string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.AppId = appId
 	}
 }
 
-func WithReplyTo(replyTo string) MessageOption {
+func WithMsgReplyTo(replyTo string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.ReplyTo = replyTo
 	}
 }
-func WithExpiration(expiration string) MessageOption {
+func WithMsgExpiration(expiration string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.Expiration = expiration
 	}
 }
 
-func WithCorrelationId(correlationId string) MessageOption {
+func WithMsgCorrelationID(correlationId string) MessageOption {
 	return func(opts *MessageOptions) {
 		opts.CorrelationId = correlationId
 	}
