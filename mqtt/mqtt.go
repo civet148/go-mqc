@@ -12,8 +12,7 @@ import (
 )
 
 type mqttClient struct {
-	client  *mq.Client
-	handler types.MessageHandler
+	client *mq.Client
 }
 
 func NewClient(address string, opfs ...options.DialOption) (types.MQ, error) {
@@ -71,8 +70,9 @@ func (c *mqttClient) Subscribe(ctx context.Context, topic string, handler types.
 	for _, opf := range opfs {
 		opf(&subOptions)
 	}
-	c.handler = handler
-	token := c.client.Subscribe(ctx, topic, mq.QoS(subOptions.Qos), c.mqttMsgHandler)
+	token := c.client.Subscribe(ctx, topic, mq.QoS(subOptions.Qos), func(client *mq.Client, message mq.Message) {
+		_ = handler(message.Topic, message.Payload)
+	})
 	if err := token.Error(); err != nil {
 		return err
 	}
@@ -80,8 +80,4 @@ func (c *mqttClient) Subscribe(ctx context.Context, topic string, handler types.
 		utils.BlockRoutine()
 	}
 	return nil
-}
-
-func (c *mqttClient) mqttMsgHandler(client *mq.Client, msg mq.Message) {
-	c.handler(msg.Topic, msg.Payload)
 }

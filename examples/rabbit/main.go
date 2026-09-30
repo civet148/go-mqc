@@ -63,7 +63,7 @@ func runConsumer(ctx context.Context, client types.MQ) (err error) {
 	return nil
 }
 
-func messageHandle1(topic string, data any, opfs ...options.MessageOption) error {
+func messageHandle1(topic string, data []byte, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)
@@ -72,7 +72,7 @@ func messageHandle1(topic string, data any, opfs ...options.MessageOption) error
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
-func messageHandle2(topic string, data any, opfs ...options.MessageOption) error {
+func messageHandle2(topic string, data []byte, opfs ...options.MessageOption) error {
 	var msgOptions options.MessageOptions
 	for _, opf := range opfs {
 		opf(&msgOptions)

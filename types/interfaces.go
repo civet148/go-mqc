@@ -12,4 +12,4 @@ type MQ interface {
 	Close(ctx context.Context) error
 }
 
-type MessageHandler func(topic string, data any, opfs ...options.MessageOption) error
+type MessageHandler func(topic string, data []byte, opfs ...options.MessageOption) error
