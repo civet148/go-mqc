@@ -78,7 +78,7 @@ func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs 
 	data := utils.MarshalPublishMsg(msg)
 	err := c.publisher.Publish(data, routingKeys, publishOptions...)
 	if err != nil {
-		return log.Errorf("exchange [%s] routing key %v publish message error: %s", c.exchangeName(), routingKeys, err)
+		return log.Errorf("exchange [%s] routing key [%v] publish message error: %s", c.exchangeName(), routingKeys, err)
 	}
 	return nil
 }
@@ -171,7 +171,7 @@ func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler type
 			return rabbitmq.Ack
 		})
 		if err != nil {
-			log.Errorf("consume exchange [%s] topic [%s] error: %s", c.exchangeName(), topic, err.Error())
+			log.Errorf("exchange [%s] consume topic [%s] error: %s", c.exchangeName(), topic, err.Error())
 		}
 	}()
 
@@ -185,6 +185,7 @@ func (c *rabbitClient) Close(ctx context.Context) error {
 	for _, consumer := range c.consumers {
 		consumer.Close()
 	}
+	c.publisher.Close()
 	return c.client.Close()
 }
 

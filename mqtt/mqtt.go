@@ -58,7 +58,7 @@ func (c *mqttClient) Close(ctx context.Context) error {
 }
 
 func (c *mqttClient) Publish(ctx context.Context, topic string, msg any, opfs ...options.PublishOption) error {
-	var timeout = 3 * time.Second
+	var timeout = 2 * time.Second
 	var opts options.PublishOptions
 	for _, opf := range opfs {
 		opf(&opts)
