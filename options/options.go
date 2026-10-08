@@ -32,101 +32,101 @@ type DialOptions struct {
 	MaxPayloadSize      int           // 最大负载数据大小 (MQTT default: 1MB)
 	MaxIncomingPacket   int           // 最大入站数据包大小 (MQTT default: 1MB)
 	ExchangeName        string        // 交换机名称(仅限RabbitMQ)
-	ExchangeKind        ExchangeKind  // 交换机类型(仅限RabbitMQ)
+	ExchangeKind        ExchangeKind  // 交换机类型(仅限RabbitMQ,默认：topic模式)
 	DeliveryMode        uint8         // 持久化控制：1=非持久化，2=持久化
 }
 
 type DialOption func(opts *DialOptions)
 
-func WithExchangeKind(exchangeKind ExchangeKind) DialOption {
+func WithDialExchangeKind(exchangeKind ExchangeKind) DialOption {
 	return func(opts *DialOptions) {
 		opts.ExchangeKind = exchangeKind
 	}
 }
 
-func WithExchangeName(exchangeName string) DialOption {
+func WithDialExchangeName(exchangeName string) DialOption {
 	return func(opts *DialOptions) {
 		opts.ExchangeName = exchangeName
 	}
 }
-func WithDeliveryMode(deliveryMode uint8) DialOption {
+func WithDialDeliveryMode(deliveryMode uint8) DialOption {
 	return func(opts *DialOptions) {
 		opts.DeliveryMode = deliveryMode
 	}
 }
-func WithUser(user string) DialOption {
+func WithDialUser(user string) DialOption {
 	return func(opts *DialOptions) {
 		opts.User = user
 	}
 }
 
-func WithPasswd(passwd string) DialOption {
+func WithDialPasswd(passwd string) DialOption {
 	return func(opts *DialOptions) {
 		opts.Passwd = passwd
 	}
 }
 
-func WithClientID(clientId string) DialOption {
+func WithDialClientID(clientId string) DialOption {
 	return func(opts *DialOptions) {
 		opts.ClientId = clientId
 	}
 }
 
-func WithKeepAlive(keepAlive time.Duration) DialOption {
+func WithDialKeepAlive(keepAlive time.Duration) DialOption {
 	return func(opts *DialOptions) {
 		opts.KeepAlive = keepAlive
 	}
 }
 
-func WithConnectTimeout(connectTimeout time.Duration) DialOption {
+func WithDialConnectTimeout(connectTimeout time.Duration) DialOption {
 	return func(opts *DialOptions) {
 		opts.ConnectTimeout = connectTimeout
 	}
 }
 
-func WithCleanSession(cleanSession bool) DialOption {
+func WithDialCleanSession(cleanSession bool) DialOption {
 	return func(opts *DialOptions) {
 		opts.CleanSession = cleanSession
 	}
 }
-func WithTLSConfig(tlsConfig *tls.Config) DialOption {
+func WithDialTLSConfig(tlsConfig *tls.Config) DialOption {
 	return func(opts *DialOptions) {
 		opts.TLSConfig = tlsConfig
 	}
 }
 
-func WithReconnectBackoff(reconnectBackoff time.Duration) DialOption {
+func WithDialReconnectBackoff(reconnectBackoff time.Duration) DialOption {
 	return func(opts *DialOptions) {
 		opts.ReconnectBackoff = reconnectBackoff
 	}
 }
 
-func WithMaxReconnectBackoff(maxReconnectBackoff time.Duration) DialOption {
+func WithDialMaxReconnectBackoff(maxReconnectBackoff time.Duration) DialOption {
 	return func(opts *DialOptions) {
 		opts.MaxReconnectBackoff = maxReconnectBackoff
 	}
 }
-func WithIncomingQueueSize(incomingQueueSize int) DialOption {
+func WithDialIncomingQueueSize(incomingQueueSize int) DialOption {
 	return func(opts *DialOptions) {
 		opts.IncomingQueueSize = incomingQueueSize
 	}
 }
-func WithProtocolVersion(protocolVersion uint8) DialOption {
+func WithDialProtocolVersion(protocolVersion uint8) DialOption {
 	return func(opts *DialOptions) {
 		opts.ProtocolVersion = protocolVersion
 	}
 }
-func WithMaxTopicLength(maxTopicLength int) DialOption {
+func WithDialMaxTopicLength(maxTopicLength int) DialOption {
 	return func(opts *DialOptions) {
 		opts.MaxTopicLength = maxTopicLength
 	}
 }
-func WithMaxPayloadSize(maxPayloadSize int) DialOption {
+func WithDialMaxPayloadSize(maxPayloadSize int) DialOption {
 	return func(opts *DialOptions) {
 		opts.MaxPayloadSize = maxPayloadSize
 	}
 }
-func WithMaxIncomingPacket(maxIncomingPacket int) DialOption {
+func WithDialMaxIncomingPacket(maxIncomingPacket int) DialOption {
 	return func(opts *DialOptions) {
 		opts.MaxIncomingPacket = maxIncomingPacket
 	}
@@ -236,10 +236,12 @@ func WithPubAppID(appID string) PublishOption {
 /*-----------------------------------------------------------------------------------------------------------*/
 
 type SubscribeOptions struct {
-	Qos         uint8  // QoS 0: 最多一次 1: 最少一次 2: 只一次 (仅MQTT)
-	NackDiscard bool   // 丢弃消息或进入死信队列(仅限RabbitMQ)
-	QueueName   string // 队列名称(仅限RabbitMQ)
-	Block       bool   // 阻塞模式
+	Qos            uint8             // QoS 0: 最多一次 1: 最少一次 2: 只一次 (仅MQTT)
+	NackDiscard    bool              // 丢弃消息或进入死信队列(仅限RabbitMQ)
+	QueueName      string            // 队列名称(仅限RabbitMQ)
+	Block          bool              // 阻塞模式
+	SubscriptionID int               // MQTT v5.0: Subscription identifier (1-268435455, 0 = none).
+	UserProperties map[string]string // MQTT v5.0: User properties
 }
 
 type SubscribeOption func(opts *SubscribeOptions)
@@ -247,6 +249,20 @@ type SubscribeOption func(opts *SubscribeOptions)
 func WithSubBlock(block bool) SubscribeOption {
 	return func(opts *SubscribeOptions) {
 		opts.Block = block
+	}
+}
+
+func WithSubSubscriptionID(subscriptionID int) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		opts.SubscriptionID = subscriptionID
+	}
+}
+func WithSubUserProperty(k, v string) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		if opts.UserProperties == nil {
+			opts.UserProperties = make(map[string]string)
+		}
+		opts.UserProperties[k] = v
 	}
 }
 

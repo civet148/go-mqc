@@ -37,11 +37,11 @@ func main() {
 	<-ch
 }
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
-	// 发布10条测试消息
+	// 发布测试消息
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg); err != nil {
+		if err = client.Publish(ctx, publishTopic, msg, options.WithPubQos(1)); err != nil {
 			panic(err)
 		}
 		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
@@ -51,7 +51,7 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
 	log.Infof("start subscribe topic [%s]", subscribeTopic)
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle)
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle, options.WithSubQos(1))
 	if err != nil {
 		return err
 	}

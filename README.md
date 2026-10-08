@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+	defer client.Close(ctx)
 
 	// 异步启动消费者
 	go runConsumer(ctx, client)
@@ -42,11 +43,11 @@ func main() {
 	<-ch
 }
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
-	// 发布10条测试消息
-	for i := 0; i < 10; i++ {
+	// 发布测试消息
+	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg); err != nil {
+		if err = client.Publish(ctx, publishTopic, msg, options.WithPubQos(1)); err != nil {
 			panic(err)
 		}
 		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
@@ -56,7 +57,7 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
 	log.Infof("start subscribe topic [%s]", subscribeTopic)
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle)
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle, options.WithSubQos(1))
 	if err != nil {
 		return err
 	}
@@ -100,7 +101,7 @@ const (
 func main() {
 	var ctx = context.Background()
 
-	client, err := mqc.NewMQ(address, options.WithExchangeName("order"), options.WithDeliveryMode(types.DeliveryModePersistent))
+	client, err := mqc.NewMQ(address, options.WithDialExchangeName("order"), options.WithDialDeliveryMode(types.DeliveryModePersistent))
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -120,13 +121,13 @@ func main() {
 }
 
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
-	// 发布10条测试消息
+	// 发布测试消息
 	for i := 0; i < 10000; i++ {
 		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg,
+		if err = client.Publish(ctx, publishTopic, []byte(msg),
 			options.WithPubPriority(3),
-			options.WithPubAppID("AppId2026001"),
+			options.WithPubAppID("2026001"),
 			options.WithPubMessageID(fmt.Sprintf("%v", i)),
 			options.WithPubContentEncoding(types.ContentEncoding_UTF8),
 			options.WithPubContentType(types.ContentType_ApplicationJSON),
@@ -168,6 +169,5 @@ func messageHandle2(topic string, data []byte, opfs ...options.MessageOption) er
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
-
 
 ```

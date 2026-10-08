@@ -19,19 +19,19 @@ type rabbitClient struct {
 }
 
 func NewClient(address string, opfs ...options.DialOption) (types.MQ, error) {
-	var dialOptions options.DialOptions
+	var opts options.DialOptions
 	for _, opf := range opfs {
-		opf(&dialOptions)
+		opf(&opts)
 	}
-	if dialOptions.ExchangeName == "" {
+	if opts.ExchangeName == "" {
 		return nil, fmt.Errorf("exchange name is empty")
 	}
-	if dialOptions.ExchangeKind == "" {
-		dialOptions.ExchangeKind = options.ExchangeKindTopic
+	if opts.ExchangeKind == "" {
+		opts.ExchangeKind = options.ExchangeKindTopic
 	}
 	var config rabbitmq.Config
-	if dialOptions.TLSConfig != nil {
-		config.TLSClientConfig = dialOptions.TLSConfig
+	if opts.TLSConfig != nil {
+		config.TLSClientConfig = opts.TLSConfig
 	}
 	conn, err := rabbitmq.NewConn(
 		address,
@@ -42,14 +42,14 @@ func NewClient(address string, opfs ...options.DialOption) (types.MQ, error) {
 	}
 	return &rabbitClient{
 		client:      conn,
-		dialOptions: dialOptions,
+		dialOptions: opts,
 	}, nil
 }
 
 func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs ...options.PublishOption) error {
-	var pubOptions options.PublishOptions
+	var opts options.PublishOptions
 	for _, opf := range opfs {
-		opf(&pubOptions)
+		opf(&opts)
 	}
 	var publisherOptions = []func(*rabbitmq.PublisherOptions){
 		rabbitmq.WithPublisherOptionsExchangeName(c.exchangeName()),
@@ -70,10 +70,10 @@ func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs 
 	var publishOptions = []func(*rabbitmq.PublishOptions){
 		rabbitmq.WithPublishOptionsExchange(c.exchangeName()),
 	}
-	if len(pubOptions.RoutingKeys) != 0 {
-		routingKeys = append(routingKeys, pubOptions.RoutingKeys...)
+	if len(opts.RoutingKeys) != 0 {
+		routingKeys = append(routingKeys, opts.RoutingKeys...)
 	}
-	publishOptions = append(publishOptions, c.parsePublishOptions(pubOptions)...)
+	publishOptions = append(publishOptions, c.parsePublishOptions(opts)...)
 
 	data := utils.MarshalPublishMsg(msg)
 	err := c.publisher.Publish(data, routingKeys, publishOptions...)
@@ -83,61 +83,61 @@ func (c *rabbitClient) Publish(ctx context.Context, topic string, msg any, opfs 
 	return nil
 }
 
-func (c *rabbitClient) parsePublishOptions(pubOptions options.PublishOptions) (publishOptions []func(*rabbitmq.PublishOptions)) {
-	if pubOptions.ContentEncoding != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentEncoding(pubOptions.ContentEncoding))
+func (c *rabbitClient) parsePublishOptions(opts options.PublishOptions) (publishOptions []func(*rabbitmq.PublishOptions)) {
+	if opts.ContentEncoding != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentEncoding(opts.ContentEncoding))
 	}
-	if pubOptions.ContentType != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentType(pubOptions.ContentType))
+	if opts.ContentType != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsContentType(opts.ContentType))
 	}
-	if pubOptions.CorrelationID != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsCorrelationID(pubOptions.CorrelationID))
+	if opts.CorrelationID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsCorrelationID(opts.CorrelationID))
 	}
-	if pubOptions.ReplyTo != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsReplyTo(pubOptions.ReplyTo))
+	if opts.ReplyTo != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsReplyTo(opts.ReplyTo))
 	}
-	if pubOptions.Priority != 0 {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPriority(pubOptions.Priority))
+	if opts.Priority != 0 {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPriority(opts.Priority))
 	}
-	if pubOptions.MessageID != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsMessageID(pubOptions.MessageID))
+	if opts.MessageID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsMessageID(opts.MessageID))
 	}
-	if pubOptions.Type != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsType(pubOptions.Type))
+	if opts.Type != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsType(opts.Type))
 	}
-	if pubOptions.UserID != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsUserID(pubOptions.UserID))
+	if opts.UserID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsUserID(opts.UserID))
 	}
-	if pubOptions.AppID != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsAppID(pubOptions.AppID))
+	if opts.AppID != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsAppID(opts.AppID))
 	}
-	if pubOptions.Timestamp.Unix() != 0 {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsTimestamp(pubOptions.Timestamp))
+	if opts.Timestamp.Unix() != 0 {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsTimestamp(opts.Timestamp))
 	}
-	if pubOptions.Expiration != "" {
-		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsExpiration(pubOptions.Expiration))
+	if opts.Expiration != "" {
+		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsExpiration(opts.Expiration))
 	}
-	if pubOptions.DeliveryMode == 0 {
+	if opts.DeliveryMode == 0 {
 		if c.dialOptions.DeliveryMode == types.DeliveryModePersistent {
 			publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPersistentDelivery)
 		}
-	} else if pubOptions.DeliveryMode == types.DeliveryModePersistent {
+	} else if opts.DeliveryMode == types.DeliveryModePersistent {
 		publishOptions = append(publishOptions, rabbitmq.WithPublishOptionsPersistentDelivery)
 	}
 	return publishOptions
 }
 
 func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler types.MessageHandler, opfs ...options.SubscribeOption) error {
-	var subOptions options.SubscribeOptions
+	var opts options.SubscribeOptions
 	for _, opf := range opfs {
-		opf(&subOptions)
+		opf(&opts)
 	}
-	if subOptions.QueueName == "" {
+	if opts.QueueName == "" {
 		return fmt.Errorf("queue name is empty")
 	}
 	consumer, err := rabbitmq.NewConsumer(
 		c.client,
-		subOptions.QueueName,
+		opts.QueueName,
 		rabbitmq.WithConsumerOptionsRoutingKey(topic),
 		rabbitmq.WithConsumerOptionsExchangeName(c.exchangeName()),
 		rabbitmq.WithConsumerOptionsExchangeKind(c.exchangeKind()),
@@ -163,7 +163,7 @@ func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler type
 				options.WithMsgAppID(d.AppId),
 			}
 			if err = handler(d.RoutingKey, d.Body, msgOptions...); err != nil {
-				if subOptions.NackDiscard {
+				if opts.NackDiscard {
 					return rabbitmq.NackDiscard
 				}
 				return rabbitmq.NackRequeue
@@ -175,7 +175,7 @@ func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler type
 		}
 	}()
 
-	if subOptions.Block {
+	if opts.Block {
 		utils.BlockRoutine()
 	}
 	return nil

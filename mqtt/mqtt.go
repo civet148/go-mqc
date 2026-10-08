@@ -57,8 +57,19 @@ func (c *mqttClient) Close(ctx context.Context) error {
 }
 
 func (c *mqttClient) Publish(ctx context.Context, topic string, msg any, opfs ...options.PublishOption) error {
+	var opts options.PublishOptions
+	for _, opf := range opfs {
+		opf(&opts)
+	}
+	var publishOptions []mq.PublishOption
+	if opts.Qos != 0 {
+		publishOptions = append(publishOptions, mq.WithQoS(mq.QoS(opts.Qos)))
+	}
+	if opts.Retain {
+		publishOptions = append(publishOptions, mq.WithRetain(true))
+	}
 	data := utils.MarshalPublishMsg(msg)
-	token := c.client.Publish(ctx, topic, data)
+	token := c.client.Publish(ctx, topic, data, publishOptions...)
 	if err := token.Error(); err != nil {
 		return err
 	}
@@ -66,17 +77,24 @@ func (c *mqttClient) Publish(ctx context.Context, topic string, msg any, opfs ..
 }
 
 func (c *mqttClient) Subscribe(ctx context.Context, topic string, handler types.MessageHandler, opfs ...options.SubscribeOption) error {
-	var subOptions options.SubscribeOptions
+	var opts options.SubscribeOptions
 	for _, opf := range opfs {
-		opf(&subOptions)
+		opf(&opts)
 	}
-	token := c.client.Subscribe(ctx, topic, mq.QoS(subOptions.Qos), func(client *mq.Client, message mq.Message) {
+	var subscribeOptions []mq.SubscribeOption
+	if opts.SubscriptionID > 0 {
+		subscribeOptions = append(subscribeOptions, mq.WithSubscriptionIdentifier(opts.SubscriptionID))
+	}
+	for k, v := range opts.UserProperties {
+		subscribeOptions = append(subscribeOptions, mq.WithSubscribeUserProperty(k, v))
+	}
+	token := c.client.Subscribe(ctx, topic, mq.QoS(opts.Qos), func(client *mq.Client, message mq.Message) {
 		_ = handler(message.Topic, message.Payload)
-	})
+	}, subscribeOptions...)
 	if err := token.Error(); err != nil {
 		return err
 	}
-	if subOptions.Block {
+	if opts.Block {
 		utils.BlockRoutine()
 	}
 	return nil
