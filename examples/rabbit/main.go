@@ -42,7 +42,6 @@ func main() {
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
 	// 发布测试消息
 	for i := 0; i < 10000; i++ {
-		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
 		if err = client.Publish(ctx, publishTopic, []byte(msg),
 			options.WithPubPriority(3),
@@ -51,9 +50,11 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 			options.WithPubContentEncoding(types.ContentEncoding_UTF8),
 			options.WithPubContentType(types.ContentType_ApplicationJSON),
 		); err != nil {
-			panic(err)
+			log.Errorf("publish error: %s", err.Error())
+		} else {
+			log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
 		}
-		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
+		time.Sleep(3 * time.Second)
 	}
 	return nil
 }

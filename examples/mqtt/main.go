@@ -39,12 +39,13 @@ func main() {
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
 	// 发布测试消息
 	for i := 0; i < 10000; i++ {
-		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
-		if err = client.Publish(ctx, publishTopic, msg, options.WithPubQos(1)); err != nil {
-			panic(err)
+		if err = client.Publish(ctx, publishTopic, msg, options.WithPubQos(1), options.WithPubTimeout(3*time.Second), options.WithPubRetain(true)); err != nil {
+			log.Errorf("publish error: %s", err.Error())
+		} else {
+			log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
 		}
-		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
+		time.Sleep(3 * time.Second)
 	}
 	return nil
 }

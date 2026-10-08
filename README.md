@@ -101,7 +101,10 @@ const (
 func main() {
 	var ctx = context.Background()
 
-	client, err := mqc.NewMQ(address, options.WithDialExchangeName("order"), options.WithDialDeliveryMode(types.DeliveryModePersistent))
+	client, err := mqc.NewMQ(address,
+		options.WithDialExchangeName("order"),
+		options.WithDialDeliveryMode(types.DeliveryModePersistent),
+		options.WithPubRetain(true))
 	if err != nil {
 		log.Panic(err.Error())
 	}

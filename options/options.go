@@ -135,21 +135,23 @@ func WithDialMaxIncomingPacket(maxIncomingPacket int) DialOption {
 /*-----------------------------------------------------------------------------------------------------------*/
 
 type PublishOptions struct {
-	Qos             uint8     // MQTT: QoS 0: 最多一次 1: 最少一次 2: 只一次
-	Retain          bool      // 是否保留消息
-	RoutingKeys     []string  // 一次发布到多个路由键
-	ContentType     string    // MIME类型，如: "application/json"
-	DeliveryMode    uint8     //	持久化控制：1=非持久化，2=持久化
-	Expiration      string    //	消息级TTL，单位毫秒，字符串格式(例如：24小时="86400000")
-	ContentEncoding string    //	字符编码，如: "utf-8"
-	Priority        uint8     //	优先级(0-9)
-	CorrelationID   string    //	RPC关联ID
-	ReplyTo         string    //	RPC回复队列
-	MessageID       string    //	消息唯一标识
-	Timestamp       time.Time //	消息时间戳
-	Type            string    //	应用自定义类型名
-	UserID          string    //	消息创建用户ID
-	AppID           string    //	消息创建应用ID
+	Qos             uint8             // MQTT: QoS 0: 最多一次 1: 最少一次 2: 只一次
+	Retain          bool              // 是否保留消息
+	RoutingKeys     []string          // 一次发布到多个路由键
+	ContentType     string            // MIME类型，如: "application/json"
+	DeliveryMode    uint8             // 持久化控制：1=非持久化，2=持久化
+	Expiration      string            // 消息级TTL，单位毫秒，字符串格式(例如：24小时="86400000")
+	ContentEncoding string            // 字符编码，如: "utf-8"
+	Priority        uint8             // 优先级(0-9)
+	CorrelationID   string            // RPC关联ID
+	ReplyTo         string            // RPC回复队列
+	MessageID       string            // 消息唯一标识
+	Timestamp       time.Time         // 消息时间戳
+	Type            string            // 应用自定义类型名
+	UserID          string            // 消息创建用户ID
+	AppID           string            // 消息创建应用ID
+	UserProperties  map[string]string // MQTT v5.0: User properties
+	Timeout         time.Duration     // 消息发布超时时间
 }
 
 type PublishOption func(opts *PublishOptions)
@@ -230,6 +232,20 @@ func WithPubUserID(userID string) PublishOption {
 func WithPubAppID(appID string) PublishOption {
 	return func(opts *PublishOptions) {
 		opts.AppID = appID
+	}
+}
+func WithPubUserProperty(k, v string) PublishOption {
+	return func(opts *PublishOptions) {
+		if opts.UserProperties == nil {
+			opts.UserProperties = make(map[string]string)
+		}
+		opts.UserProperties[k] = v
+	}
+}
+
+func WithPubTimeout(timeout time.Duration) PublishOption {
+	return func(opts *PublishOptions) {
+		opts.Timeout = timeout
 	}
 }
 
