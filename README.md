@@ -101,10 +101,7 @@ const (
 func main() {
 	var ctx = context.Background()
 
-	client, err := mqc.NewMQ(address,
-		options.WithDialExchangeName("order"),
-		options.WithDialDeliveryMode(types.DeliveryModePersistent),
-		options.WithPubRetain(true))
+	client, err := mqc.NewMQ(address, options.WithDialExchangeName("order"), options.WithDialDeliveryMode(types.DeliveryModePersistent))
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -126,7 +123,6 @@ func main() {
 func runPublisher(ctx context.Context, client types.MQ) (err error) {
 	// 发布测试消息
 	for i := 0; i < 10000; i++ {
-		time.Sleep(1 * time.Second)
 		var msg = fmt.Sprintf("hello %v", i+1)
 		if err = client.Publish(ctx, publishTopic, []byte(msg),
 			options.WithPubPriority(3),
@@ -135,19 +131,21 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 			options.WithPubContentEncoding(types.ContentEncoding_UTF8),
 			options.WithPubContentType(types.ContentType_ApplicationJSON),
 		); err != nil {
-			panic(err)
+			log.Errorf("publish error: %s", err.Error())
+		} else {
+			log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
 		}
-		log.Infof("Publish routing key [%s] message [%v]", publishTopic, msg)
+		time.Sleep(3 * time.Second)
 	}
 	return nil
 }
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithSubQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithSubQueueName("order_queue_1"), options.WithSubCustomerTag("order-customer-1"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithSubQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithSubQueueName("order_queue_1"), options.WithSubCustomerTag("order-customer-2"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}
@@ -172,5 +170,6 @@ func messageHandle2(topic string, data []byte, opfs ...options.MessageOption) er
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
+
 
 ```

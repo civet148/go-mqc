@@ -60,11 +60,11 @@ func runPublisher(ctx context.Context, client types.MQ) (err error) {
 }
 
 func runConsumer(ctx context.Context, client types.MQ) (err error) {
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithSubQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle1, options.WithSubQueueName("order_queue_1"), options.WithSubCustomerTag("order-customer-1"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}
-	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithSubQueueName("order_queue_1"))
+	err = client.Subscribe(ctx, subscribeTopic, messageHandle2, options.WithSubQueueName("order_queue_1"), options.WithSubCustomerTag("order-customer-2"))
 	if err != nil {
 		return log.Errorf("Subscribe topic [%s] error: %s", subscribeTopic, err)
 	}

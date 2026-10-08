@@ -252,15 +252,47 @@ func WithPubTimeout(timeout time.Duration) PublishOption {
 /*-----------------------------------------------------------------------------------------------------------*/
 
 type SubscribeOptions struct {
-	Qos            uint8             // QoS 0: 最多一次 1: 最少一次 2: 只一次 (仅MQTT)
-	NackDiscard    bool              // 丢弃消息或进入死信队列(仅限RabbitMQ)
-	QueueName      string            // 队列名称(仅限RabbitMQ)
-	Block          bool              // 阻塞模式
+	Qos            uint8             // MQTT: QoS 0: 最多一次 1: 最少一次 2: 只一次
 	SubscriptionID int               // MQTT v5.0: Subscription identifier (1-268435455, 0 = none).
 	UserProperties map[string]string // MQTT v5.0: User properties
+	QueueName      string            // 队列名称(仅限RabbitMQ)
+	Name           string            // RabbitMQ: 消费者标签名称
+	AutoAck        bool              // RabbitMQ: 自动确认
+	Exclusive      bool              // RabbitMQ: 排他性
+	NoWait         bool              // RabbitMQ: 不等待
+	//NoLocal        bool              // RabbitMQ: 不本地消费(不支持)
+	NackDiscard bool // RabbitMQ: 丢弃消息或进入死信队列
+	Block       bool // 阻塞模式
 }
 
 type SubscribeOption func(opts *SubscribeOptions)
+
+func WithSubCustomerTag(name string) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		opts.Name = name
+	}
+}
+func WithSubAutoAck(autoAck bool) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		opts.AutoAck = autoAck
+	}
+}
+func WithSubExclusive(exclusive bool) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		opts.Exclusive = exclusive
+	}
+}
+func WithSubNoWait(noWait bool) SubscribeOption {
+	return func(opts *SubscribeOptions) {
+		opts.NoWait = noWait
+	}
+}
+
+//func WithSubNoLocal(noLocal bool) SubscribeOption {
+//	return func(opts *SubscribeOptions) {
+//		opts.NoLocal = noLocal
+//	}
+//}
 
 func WithSubBlock(block bool) SubscribeOption {
 	return func(opts *SubscribeOptions) {

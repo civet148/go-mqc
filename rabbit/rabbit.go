@@ -135,14 +135,21 @@ func (c *rabbitClient) Subscribe(ctx context.Context, topic string, handler type
 	if opts.QueueName == "" {
 		return fmt.Errorf("queue name is empty")
 	}
-	consumer, err := rabbitmq.NewConsumer(
-		c.client,
-		opts.QueueName,
+	var consumerOptions = []func(*rabbitmq.ConsumerOptions){
 		rabbitmq.WithConsumerOptionsRoutingKey(topic),
 		rabbitmq.WithConsumerOptionsExchangeName(c.exchangeName()),
 		rabbitmq.WithConsumerOptionsExchangeKind(c.exchangeKind()),
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
-	)
+		rabbitmq.WithConsumerOptionsConsumerName(opts.Name),
+		rabbitmq.WithConsumerOptionsConsumerAutoAck(opts.AutoAck),
+	}
+	if opts.Exclusive {
+		consumerOptions = append(consumerOptions, rabbitmq.WithConsumerOptionsConsumerExclusive)
+	}
+	if opts.NoWait {
+		consumerOptions = append(consumerOptions, rabbitmq.WithConsumerOptionsConsumerNoWait)
+	}
+	consumer, err := rabbitmq.NewConsumer(c.client, opts.QueueName, consumerOptions...)
 	if err != nil {
 		return err
 	}
